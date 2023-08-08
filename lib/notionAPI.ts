@@ -1,5 +1,6 @@
 import { Client } from '@notionhq/client';
 import { NotionToMarkdown } from 'notion-to-md';
+import { NUMBER_OF_POSTS_PER_PAGE } from '../constants/constants';
 
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
@@ -63,4 +64,26 @@ export const getSinglePost = async (slug) => {
     metadata,
     markdown: mdString,
   };
+};
+
+// Topページ用記事の取得 (4つの記事を取得)
+export const getPostsForTopPage = async (pageSize: number) => {
+  const allPosts = await getAllPosts();
+  const fourPosts = allPosts.slice(0, pageSize);
+
+  return fourPosts;
+};
+
+//ページ番号に応じた記事の取得
+export const getPostsByPage = async (page: number) => {
+  const allPosts = await getAllPosts();
+
+  const startIndex = (page - 1) * NUMBER_OF_POSTS_PER_PAGE; //NUMBER_OF_POSTS_PER_PAGEは./constants/constants.ts内に1ページで何記事入れるかを指定できる
+  const endIndex = startIndex + NUMBER_OF_POSTS_PER_PAGE;
+  return allPosts.slice(startIndex, endIndex);
+};
+
+export const getNumberOfPages = async () => {
+  const allPosts = await getAllPosts();
+  return Math.floor(allPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (allPosts.length % NUMBER_OF_POSTS_PER_PAGE) > 0 ? 1 : 0; // ページにあまりが出たら1を返し、余が出なければ0を返す三項演算子を作成
 };
