@@ -33,7 +33,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
       numberOfPage,
       allTags,
     },
-    revalidate: 60 * 60 * 6, // revalidate: ISR設定を行うプロパティ (秒数を設定)
+    revalidate: 10, // revalidate: ISR設定を行うプロパティ (秒数を設定)
   };
 };
 
