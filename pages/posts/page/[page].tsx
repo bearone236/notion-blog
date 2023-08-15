@@ -1,11 +1,20 @@
 import Head from 'next/head';
-import { getPostsByPage, getPostsForTopPage } from '../../../lib/notionAPI';
+import { getAllTags, getNumberOfPages, getPostsByPage, getPostsForTopPage } from '../../../lib/notionAPI';
 import SinglePost from '../../../components/Post/SinglePost';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import Pagination from '../../../components/Pagination/Pagination';
+import { Tag } from '../../../components/Tag/Tag';
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const numberOfPage = await getNumberOfPages();
+
+  // ページが増えた際にpageの数を動的に生成
+  let params = [];
+  for (let i = 1; i <= numberOfPage; i++) {
+    params.push({ params: { page: i.toString() } });
+  }
   return {
-    paths: [{ params: { page: '1' } }, { params: { page: '2' } }],
+    paths: params,
     fallback: 'blocking',
   };
 };
@@ -14,16 +23,21 @@ export const getStaticProps: GetStaticProps = async (context) => {
   const currentPage = context.params?.page;
 
   const postsByPage = await getPostsByPage(parseInt(currentPage.toString(), 10));
+  const numberOfPage = await getNumberOfPages();
+
+  const allTags = await getAllTags();
 
   return {
     props: {
       postsByPage,
+      numberOfPage,
+      allTags,
     },
     revalidate: 60 * 60 * 6, // revalidate: ISR設定を行うプロパティ (秒数を設定)
   };
 };
 
-const BlogPageList = ({ postsByPage }) => {
+const BlogPageList = ({ postsByPage, numberOfPage, allTags }) => {
   // console.log(allPosts);
   return (
     <div className="container h-full w-full mx-auto ">
@@ -37,11 +51,13 @@ const BlogPageList = ({ postsByPage }) => {
       <h1 className="text-5xl font-medium text-center mb-16">Notion Blog🚀</h1>
       <section className="sm:grid grid-cols-2 w-5/6 gap-3 mx-auto">
         {postsByPage.map((post) => (
-          <div>
+          <div key={post.id}>
             <SinglePost title={post.title} description={post.description} date={post.date} tags={post.tags} slug={post.slug} isPagenationPage={true} />
           </div>
         ))}
       </section>
+      <Pagination numberOfPage={numberOfPage} tag={''} />
+      <Tag tags={allTags} />
     </div>
   );
 };

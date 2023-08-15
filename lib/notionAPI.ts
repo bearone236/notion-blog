@@ -12,6 +12,13 @@ export const getAllPosts = async () => {
   const posts = await notion.databases.query({
     database_id: process.env.NOTION_DATABASE_ID,
     page_size: 100,
+    filter: {
+      property: 'Published',
+      checkbox: {
+        equals: true,
+      },
+    },
+    sorts: [{ property: 'Date', direction: 'descending' }], //日時によって降順に並び替える実装
   });
 
   const allPosts = posts.results;
@@ -85,5 +92,34 @@ export const getPostsByPage = async (page: number) => {
 
 export const getNumberOfPages = async () => {
   const allPosts = await getAllPosts();
-  return Math.floor(allPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (allPosts.length % NUMBER_OF_POSTS_PER_PAGE) > 0 ? 1 : 0; // ページにあまりが出たら1を返し、余が出なければ0を返す三項演算子を作成
+  return Math.floor(allPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (allPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0); // ページにあまりが出たら1を返し、余が出なければ0を返す三項演算子を作成
+};
+
+// Tagを用いてフィルタリングできる機能の実装
+export const getPostsByTagAndPage = async (tagName: string, page: number) => {
+  const allPosts = await getAllPosts();
+  const posts = allPosts.filter((post) => post.tags.find((tag: string) => tag === tagName));
+
+  const startIndex = (page - 1) * NUMBER_OF_POSTS_PER_PAGE; //NUMBER_OF_POSTS_PER_PAGEは./constants/constants.ts内に1ページで何記事入れるかを指定できる
+  const endIndex = startIndex + NUMBER_OF_POSTS_PER_PAGE;
+
+  return posts.slice(startIndex, endIndex);
+};
+
+// 選択したタグの動的ページを実装
+export const getNumberOfPageByTag = async (tagName: string) => {
+  const allPosts = await getAllPosts();
+  const posts = allPosts.filter((post) => post.tags.find((tag: string) => tag === tagName));
+  return Math.floor(posts.length / NUMBER_OF_POSTS_PER_PAGE) + (posts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0); // ページにあまりが出たら1を返し、余が出なければ0を返す三項演算子を作成
+};
+
+//全てのタグを取得するAPI
+export const getAllTags = async () => {
+  const allPosts = await getAllPosts();
+
+  const allTagssDuplicationLists = allPosts.flatMap((post) => post.tags);
+  const set = new Set(allTagssDuplicationLists);
+  const allTagsList = Array.from(set);
+
+  return allTagsList;
 };
